@@ -1,0 +1,20 @@
+{
+  "strategy": "trend",
+  "universe": [
+    "US equity",
+    "Intl equity",
+    "Treasuries",
+    "Gold",
+    "Commodities"
+  ],
+  "n_trials": 19,
+  "winner_params": {
+    "fast": 20,
+    "slow": 250
+  },
+  "is_sharpe": 0.863,
+  "oos_sharpe": 0.506,
+  "deflated_sharpe": 0.9972,
+  "passing": true,
+  "generated_at": "2026-06-18T19:10:28"
+}

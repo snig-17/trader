@@ -1,0 +1,20 @@
+# Secrets — never commit
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Runtime state / outputs
+state/
+journal/
+HALTED
+KILL
+LIVE_AUTHORIZED
+
+# macOS
+.DS_Store
+
+# Local backup artifacts (not source)
+_original_bundle.zip
