@@ -83,8 +83,10 @@ UNIVERSE: list[Instrument] = [
     Instrument("Agriculture",  "DBA",     "DBA", "equity", "commodity"),   # ag basket; distinct driver from energy-heavy DBC
     Instrument("US Dollar",    "UUP",     "UUP", "equity", "currency"),    # FX = a new, low-correlation asset class
     Instrument("Jpn Yen",      "FXY",     "FXY", "equity", "currency"),    # classic safe-haven trend, distinct from UUP
-    # Crypto trades 24/7; uncomment to include (needs crypto enabled on the account):
-    # Instrument("Bitcoin",    "BTC-USD", "BTC/USD", "crypto", "crypto"),
+    # Crypto trades 24/7 (needs crypto enabled on the Alpaca account). Long-only spot,
+    # high volatility (ATR sizing keeps the position small) and high cost (see costs.py).
+    # Added as ONE daily-rebalanced diversifier, not a high-frequency sleeve.
+    Instrument("Bitcoin",      "BTC-USD", "BTC/USD", "crypto", "crypto"),
 ]
 # Breadth rationale: the trend premium is overwhelmingly a diversification effect
 # (single-asset trend strategies correlate <0.1; see docs/research-trend-following.md).

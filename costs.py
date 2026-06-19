@@ -23,6 +23,7 @@ DEFAULT_COST_BPS = {
     "GLD": 2.0,
     "USO": 4.0,   # thinner, contango-prone oil ETF
     "BTC-USD": 10.0,  # crypto spreads + fees + slippage are materially higher
+    "BTC/USD": 15.0,  # Alpaca crypto symbol; spread+fees on paper/live are ~15bps one-way
 }
 FALLBACK_COST_BPS = 5.0
 

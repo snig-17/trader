@@ -5,17 +5,20 @@ and the rules that must not be broken. Read it first every session. Keep it
 updated when something material changes.
 
 ## What this is
-A **paper-trading** bot in Python. Cross-asset **daily trend-following** over 9
-ETFs spanning 5 correlation clusters:
+A **paper-trading** bot in Python. Cross-asset **daily trend-following** over 9 ETFs
++ 1 crypto, spanning 6 correlation clusters:
 
 - **SPY**, **EFA** — equity (US, international)
 - **IEF**, **TLT** — rates (intermediate, long Treasuries)
 - **GLD** — metals
 - **DBC**, **DBA** — commodity (broad/energy-heavy, agriculture)
 - **UUP**, **FXY** — currency (US dollar, Japanese yen)
+- **BTC/USD** — crypto (24/7, long-only spot, high cost ~15bps, ATR-sized small)
 
-The currency + commodity/rates depth was added 2026-06-19 for breadth (the trend
-premium is largely a diversification effect; see `docs/research-trend-following.md`).
+Breadth (currency/commodity/rates depth + crypto) was added 2026-06-19 — the trend
+premium is largely a diversification effect; see `docs/research-trend-following.md`.
+To actually trade BTC, crypto must be enabled on the Alpaca paper account; until
+then its order fails gracefully (logged, never crashes the run).
 
 Uses the **alpaca-py** SDK (NOT the deprecated `alpaca-trade-api`). Deterministic
 rules only — **no LLM in the trade loop**. Paper account by default. Paper money,
@@ -47,19 +50,20 @@ python validate_for_live.py  # walk-forward validation; writes validation_report
 ## Current status (last verified 2026-06-19)
 - `test_safety.py` — all 11 checks PASS (9-name universe; the gross-cap test is now
   rounding-aware since summing 9 display-rounded targets drifts ~3e-4).
-- `validate_for_live.py` — PASSES on the broadened 9-ETF universe: in-sample Sharpe
-  0.73, out-of-sample 0.50, deflated Sharpe 0.995 over 19 trials (winner params
-  fast=20, slow=250). Report in `validation_reports/trend.json`.
-  - HONEST NOTE: broadening 5->9 ETFs did NOT improve OOS Sharpe (0.51->0.50) and
-    in-sample fell (0.86->0.73). The theoretical breadth benefit didn't materialize
-    in this LONG-ONLY ETF backtest over the post-2007 common window (dominated by the
-    documented post-2010 trend decay). It still adds cluster diversification (lower
-    concentration risk) but is ~Sharpe-neutral here. Do NOT tune the grid to
-    manufacture a better number.
-  - DECISION (2026-06-19): KEEP the 9-ETF universe. The OOS Sharpe is net of costs
-    and ~unchanged, so the diversification (5 clusters, a new FX driver) comes with
-    no risk-adjusted penalty and matches the user's lower-risk / many-small-bets
-    goal. Reverting to 5 ETFs is a one-commit change if simplicity is preferred.
+- `validate_for_live.py` — PASSES on the 10-instrument universe (9 ETFs + BTC):
+  in-sample Sharpe 0.56, out-of-sample 0.725, deflated Sharpe 0.982 over 19 trials
+  (grid winner fast=50, slow=150). Report in `validation_reports/trend.json`.
+  - HONEST NOTE on BTC: adding it raised OOS Sharpe (0.50->0.725) but this is largely
+    a CRYPTO-BULL-RUN ARTIFACT (BTC's 2017/2020-21 runs land in the OOS half) — do NOT
+    read 0.725 as a forecast. Crypto is high-vol, drawdown-heavy (>-70% bears), long-
+    only here, and its future is far more uncertain than its past. DSR also fell
+    (0.995->0.982, still > 0.95 gate). ATR sizing keeps the BTC position small.
+  - HONEST NOTE on 5->9 ETFs: was ~Sharpe-neutral (diversification, not alpha).
+  - KNOWN GAP: `validate_for_live.py` reports/gates the best GRID params (e.g. 50/150),
+    but the bot at runtime trades `config.STRATEGY_PARAMS["trend"]` (fast=50, slow=200).
+    So the gate does not certify the exact params the bot trades. Pre-existing; should
+    be aligned (make the bot trade the validated winner, or validate the runtime params).
+  - Do NOT tune the grid to manufacture a passing number.
 - `bot.py dry` / `bot.py once` — connect to Alpaca paper fine (equity $100k).
 
 ## Strategy summary
