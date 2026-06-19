@@ -135,8 +135,11 @@ class AlpacaBroker(BrokerBase):
                 "side": side, "placed": True}
 
     def close_position(self, symbol: str) -> dict:
+        # Crypto positions are keyed without the slash (e.g. BTCUSD); a slash in the
+        # symbol breaks the REST path (/positions/BTC/USD -> 404).
+        api_sym = symbol.replace("/", "")
         try:
-            _run(lambda: self.client.close_position(symbol))
+            _run(lambda: self.client.close_position(api_sym))
         except Exception as e:
             return {"symbol": symbol, "error": str(e)}
         return {"symbol": symbol, "closed": True}
