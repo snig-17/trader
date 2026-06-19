@@ -151,8 +151,14 @@ in the trade loop. Two layers, split by where they CAN run:
     data (egress blocks yfinance, 403) — re-validation moved LOCAL. Disable or
     leave it filing RUN-ERROR issues; egress allowlist on the Default env is not
     user-editable.
-- **Local (`automation/` via launchd — needs `.env` keys / live market data):**
-  - `bot.py once` daily weekdays ~15:00 London (~10:00 ET).
+- **Trade loop → GitHub Actions** (`.github/workflows/daily-trade.yml`): runs
+  `bot.py once` weekdays 15:00 UTC on an ephemeral runner (a daily-bar bot needs no
+  24/7 server). PAPER via BOT_MODE + Alpaca keys in repo Actions Secrets. Commits
+  `state/` + `journal/` back so breaker history (peak equity) survives runs. This is
+  the SOLE trader — the local launchd trade agent was removed to avoid double-trading.
+  Reads winner params from the committed `validation_reports/trend.json`, so update
+  that report (commit it) to change the cloud bot's params.
+- **Local (`automation/` via launchd — non-trading helpers):**
   - `monitor.py` after close ~21:15 London: equity/positions/P&L/drawdown +
     HALT/KILL → `logs/` + macOS notification.
   - `validate_for_live.py` monthly, 1st 09:00 London → `logs/` + notification
