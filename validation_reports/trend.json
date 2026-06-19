@@ -17,9 +17,10 @@
     "fast": 50,
     "slow": 150
   },
-  "is_sharpe": 0.826,
-  "oos_sharpe": 1.064,
+  "periods_per_year": 291.8,
+  "is_sharpe": 0.889,
+  "oos_sharpe": 1.145,
   "deflated_sharpe": 0.9997,
   "passing": true,
-  "generated_at": "2026-06-19T11:55:52"
+  "generated_at": "2026-06-19T12:36:05"
 }

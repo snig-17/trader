@@ -1,0 +1,61 @@
+name: monthly-validate
+
+# Monthly walk-forward re-validation. Runs on GitHub (open internet -> yfinance works,
+# unlike the Claude cloud sandbox). It COMMITS the refreshed validation_reports/trend.json
+# so the daily-trade workflow (which reads the committed report for winner params and the
+# live-gate freshness) actually picks up new validation results. No Alpaca keys needed.
+
+on:
+  schedule:
+    - cron: "0 8 1 * *"   # 1st of each month, 08:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: validate
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install alpaca-py yfinance pandas numpy scipy matplotlib
+
+      - name: Re-validate (writes validation_reports/trend.json)
+        run: python validate_for_live.py
+
+      - name: Commit refreshed report (rebase-retry)
+        run: |
+          git config user.name  "trader-bot"
+          git config user.email "trader-bot@users.noreply.github.com"
+          git add validation_reports/trend.json
+          if git diff --cached --quiet; then
+            echo "no change to trend.json"
+          else
+            git commit -m "monthly re-validation $(date -u +%F) [skip ci]"
+            for i in 1 2 3 4 5; do
+              if git push; then break; fi
+              echo "push rejected; rebasing (attempt $i)"
+              git pull --rebase --autostash origin master || true
+            done
+          fi
+
+      - name: File result as a GitHub issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          STATUS=$(python -c "import json;r=json.load(open('validation_reports/trend.json'));print('PASS' if r['passing'] else 'EDGE DEGRADED')")
+          BODY=$(python -c "import json;r=json.load(open('validation_reports/trend.json'));print(chr(10).join(f'- {k}: {v}' for k,v in r.items()))")
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "Monthly re-validation $(date -u +%F) — $STATUS" \
+            --body "$BODY"$'\n\nLive gate clears only if deflated_sharpe >= 0.95 AND oos_sharpe > 0. If EDGE DEGRADED, do not go live; review.'

@@ -33,6 +33,19 @@ SPLIT = 0.5
 TREND_GRID = {"fast": (20, 30, 50, 75, 100), "slow": (100, 150, 200, 250)}
 
 
+def _periods_per_year(idx) -> float:
+    """Annualization factor from the ACTUAL calendar of the return series. With BTC
+    (365 trading days/yr) the portfolio series spans ~365 days/yr, not 252, so a
+    hard-coded sqrt(252) would misstate the annualized Sharpe. DSR/pass-fail are
+    computed on the per-bar series and are unaffected."""
+    if len(idx) < 2:
+        return 252.0
+    span_days = (idx[-1] - idx[0]).days
+    if span_days <= 0:
+        return 252.0
+    return len(idx) * 365.25 / span_days
+
+
 def _portfolio_net(params: dict) -> pd.Series:
     """Equal-weight, vol-targeted portfolio net returns across the universe."""
     # Validate the SAME strategy the bot trades: carry the runtime trend config
@@ -74,7 +87,8 @@ def validate_trend() -> dict:
 
     best = max(results, key=lambda r: r["is"])
     dsr = M.deflated_sharpe_ratio(best["net"].iloc[:best["k"]], is_sharpes)
-    oos_ann = best["oos"] * np.sqrt(252)
+    ann = np.sqrt(_periods_per_year(best["net"].index))   # calendar-correct annualization
+    oos_ann = best["oos"] * ann
     passing = bool(dsr["dsr"] is not None and dsr["dsr"] >= config.VALIDATION_MIN_DSR
                    and oos_ann > 0)
     return {
@@ -82,7 +96,8 @@ def validate_trend() -> dict:
         "universe": [i.name for i in config.UNIVERSE],
         "n_trials": len(results),
         "winner_params": best["params"],
-        "is_sharpe": round(best["is"] * np.sqrt(252), 3),
+        "periods_per_year": round(_periods_per_year(best["net"].index), 1),
+        "is_sharpe": round(best["is"] * ann, 3),
         "oos_sharpe": round(oos_ann, 3),
         "deflated_sharpe": round(dsr["dsr"], 4) if dsr["dsr"] is not None else None,
         "passing": passing,

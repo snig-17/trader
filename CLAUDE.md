@@ -147,25 +147,28 @@ in the trade loop. Two layers, split by where they CAN run:
   - `trader — monthly trend-following research digest` (1st, 09:00 UTC, Opus):
     web-researches trend developments, files a cited issue (human-review input
     only). Web access works in the sandbox.
-  - NOTE: cloud `trader — monthly re-validation` (trig_015i…) CANNOT fetch market
-    data (egress blocks yfinance, 403) — re-validation moved LOCAL. Disable or
-    leave it filing RUN-ERROR issues; egress allowlist on the Default env is not
-    user-editable.
+  - NOTE: the old cloud `trader — monthly re-validation` Claude routine (trig_015i…)
+    is DISABLED — the Claude sandbox blocks yfinance egress. Re-validation now runs on
+    GitHub Actions instead (below).
 - **Trade loop → GitHub Actions** (`.github/workflows/daily-trade.yml`): runs
   `bot.py once` weekdays 15:00 UTC on an ephemeral runner (a daily-bar bot needs no
-  24/7 server). PAPER via BOT_MODE + Alpaca keys in repo Actions Secrets. Commits
-  `state/` + `journal/` back so breaker history (peak equity) survives runs. This is
-  the SOLE trader — the local launchd trade agent was removed to avoid double-trading.
-  Reads winner params from the committed `validation_reports/trend.json`, so update
-  that report (commit it) to change the cloud bot's params.
-- **Local (`automation/` via launchd — non-trading helpers):**
+  24/7 server). PAPER via BOT_MODE + Alpaca keys in repo Actions Secrets. Persists
+  `state/` + `journal/` back (now tracked, rebase-retry, hard-fail if it can't push)
+  so breaker history (peak equity) survives runs. SOLE trader — local trade agent
+  removed. Reads winner params from the committed `validation_reports/trend.json`.
+- **Monthly re-validation → GitHub Actions** (`.github/workflows/monthly-validate.yml`):
+  1st of month; GitHub runners reach yfinance. COMMITS the refreshed `trend.json` (so
+  the trader picks up new params + gate freshness — fixes the prior local-only gap) and
+  files a PASS / EDGE-DEGRADED GitHub issue. No Alpaca keys needed.
+- **Local (`automation/` via launchd — monitor only, non-trading):**
   - `monitor.py` after close ~21:15 London: equity/positions/P&L/drawdown +
-    HALT/KILL → `logs/` + macOS notification.
-  - `validate_for_live.py` monthly, 1st 09:00 London → `logs/` + notification
-    (PASS / EDGE DEGRADED). yfinance works locally.
-  - Install steps + VPS reliability caveat: `automation/README.md`. NOT auto-loaded;
-    user installs the LaunchAgents. macOS notifications use ASCII text only (AppleScript
-    can't parse JSON \uXXXX escapes, so no emoji/em-dash in notification strings).
+    HALT/KILL → `logs/` + macOS notification. (Trade + re-validation are on Actions.)
+  - Install: `automation/README.md`. macOS notifications use ASCII only (AppleScript
+    can't parse JSON \uXXXX escapes).
+  - NOTE: monitor reads the LOCAL `state/` file, which the cloud trader updates in git
+    — `git pull` to see fresh day_pl/drawdown; equity/positions are always live from Alpaca.
+- **Crypto position keys:** Alpaca returns crypto positions without the slash (BTCUSD);
+  bot reconcile and broker.close_position both normalize for this.
 
 ## Standing context
 Plan is to paper-trade for months before drawing conclusions. Early P&L is noise.
