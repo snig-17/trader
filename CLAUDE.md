@@ -120,6 +120,25 @@ python validate_for_live.py  # walk-forward validation; writes validation_report
   strategies). No changes made yet — awaiting a decision. Any change must
   re-pass `validate_for_live.py`.
 
+## Automation (set up 2026-06-19)
+The optimal workflow for a daily-bar trend bot is **reliable execution + slow,
+disciplined re-validation + monitoring** — NOT picking a new "optimal strategy"
+each day (that is overfitting/regime-chasing and is what blows accounts up). No LLM
+in the trade loop. Two layers, split by where they CAN run:
+
+- **Cloud (Claude scheduled routines — manage at https://claude.ai/code/routines):**
+  run in Anthropic's cloud from the GitHub repo; no access to local files/keys.
+  - `trader — monthly re-validation` (1st, 08:00 UTC): runs `validate_for_live.py`
+    on public data, emails PASS / ⚠️ EDGE DEGRADED to santosh.m.tiwari@gmail.com.
+  - `trader — monthly research digest` (1st, 09:00 UTC): web-researches trend
+    developments, emails a cited digest (human-review input only).
+- **Local (`automation/` via launchd — needs `.env` keys + local venv/journal):**
+  - `bot.py once` daily on weekdays ~15:00 London (~10:00 ET).
+  - `monitor.py` after close ~21:15 London: equity/positions/P&L/drawdown +
+    HALT/KILL state → `logs/` + macOS notification.
+  - Install steps + VPS reliability caveat: `automation/README.md`. NOT auto-loaded;
+    user installs the LaunchAgents.
+
 ## Standing context
 Plan is to paper-trade for months before drawing conclusions. Early P&L is noise.
 A passing validation is necessary but not sufficient.
