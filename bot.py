@@ -127,7 +127,11 @@ def run_once(broker: BrokerBase, dry_run: bool = False, min_rebalance_frac: floa
         if not price:
             continue
         sym = alpaca_of[name]
-        cur_notional = positions[sym].market_value if sym in positions else 0.0
+        # Alpaca keys crypto positions WITHOUT the slash (BTC/USD -> BTCUSD), so match
+        # both forms or the bot never sees an existing crypto position (would re-buy
+        # daily and never trim/exit).
+        pos = positions.get(sym) or positions.get(sym.replace("/", ""))
+        cur_notional = pos.market_value if pos else 0.0
         tgt_notional = tfrac * equity
         delta = tgt_notional - cur_notional
         tradable_now = market_open or is_crypto[name]

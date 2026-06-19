@@ -44,10 +44,18 @@ jobs:
         run: |
           git config user.name  "trader-bot"
           git config user.email "trader-bot@users.noreply.github.com"
-          git add -f state/ journal/ || true
-          if ! git diff --cached --quiet; then
-            git commit -m "bot run $(date -u +%FT%TZ) [skip ci]"
-            git push
-          else
-            echo "no state/journal changes to commit"
+          git add state/ journal/   # tracked now; no -f needed
+          if git diff --cached --quiet; then
+            echo "no state/journal changes to commit"; exit 0
           fi
+          git commit -m "bot run $(date -u +%FT%TZ) [skip ci]"
+          # Push with rebase-retry: a concurrent commit must NOT silently drop this
+          # run's state (that would reset the drawdown-breaker peak). Fail loudly if
+          # we genuinely can't persist, so a broken breaker memory is never hidden.
+          for i in 1 2 3 4 5; do
+            if git push; then echo "state persisted"; exit 0; fi
+            echo "push rejected; rebasing onto origin/master (attempt $i)"
+            git pull --rebase --autostash origin master || true
+          done
+          echo "::error::failed to persist state/journal after 5 attempts" >&2
+          exit 1

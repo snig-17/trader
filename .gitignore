@@ -6,10 +6,12 @@
 __pycache__/
 *.pyc
 
-# Runtime state / outputs
-state/
-journal/
-HALTED
+# Cloud-persisted runtime state + audit trail: state/ (incl. bot_state.json and a
+# tripped state/HALTED) and journal/ ARE tracked, so the Actions runner can persist
+# circuit-breaker history across ephemeral runs and a halt stays tripped until a human
+# deletes state/HALTED and commits. KILL and LIVE_AUTHORIZED are deliberately NOT
+# committed: manual local controls, and LIVE_AUTHORIZED is a live gate that must never
+# live in the repo.
 KILL
 LIVE_AUTHORIZED
 
