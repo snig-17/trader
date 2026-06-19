@@ -2,26 +2,30 @@
 
 Two layers, split by where they *can* run:
 
-## Cloud (already set up — Claude scheduled routines)
-These run in Anthropic's cloud from the GitHub repo. They do **not** touch your Mac,
-keys, or account; they only need the public code + internet. Manage/disable at
-https://claude.ai/code/routines
+## Cloud (Claude scheduled routine — manage at https://claude.ai/code/routines)
+Runs in Anthropic's cloud from the GitHub repo. Reports by opening a **GitHub issue**
+(Watch the repo → All Activity to get emailed). Gmail was dropped: the connector
+only creates drafts and the token expires.
 
-- **Monthly re-validation** — 1st of month, 08:00 UTC. Clones the repo, runs
-  `validate_for_live.py` (public yfinance data, no keys), emails PASS / ⚠️ EDGE
-  DEGRADED to your Gmail.
-- **Monthly research digest** — 1st of month, 09:00 UTC. Web-researches trend-
-  following developments and emails a cited digest (input to human review only).
+- **Monthly research digest** — 1st of month, 09:00 UTC (Opus). Web-researches
+  trend-following developments and files a cited digest issue (human-review input
+  only). Needs only web access, which the sandbox allows.
 
-## Local (this folder — launchd, needs your keys)
-The **trade loop** and **daily monitor** need the Alpaca keys in `.env` and the
-local venv/journal, so they cannot run in the cloud. They run on this Mac via
-`launchd`.
+> NOTE: the cloud sandbox **blocks Yahoo Finance egress** (HTTP 403), so
+> `validate_for_live.py` cannot fetch data there — re-validation therefore runs
+> LOCALLY (below), not in the cloud. The "Default" environment's egress allowlist
+> is not user-editable.
+
+## Local (this folder — launchd, needs your keys / market data)
+The **trade loop**, **daily monitor**, and **monthly re-validation** need either the
+Alpaca keys in `.env` or live yfinance data, so they run on this Mac via `launchd`.
 
 - `run_trade.sh` → `bot.py once` — one daily rebalance (paper). Safe when the
   market is closed (logs SKIP, places nothing).
 - `run_monitor.sh` → `monitor.py` — after-close account snapshot (equity,
   positions, day P&L, drawdown, HALT/KILL), logs to `logs/` + a macOS notification.
+- `run_validate.sh` → `validate_for_live.py` — monthly walk-forward re-validation;
+  logs + macOS notification (PASS / EDGE DEGRADED). yfinance works locally.
 
 ### Install
 ```bash
@@ -32,10 +36,12 @@ chmod +x ~/trader/automation/run_trade.sh ~/trader/automation/run_monitor.sh
 #    edit the two .plist files and replace /Users/snigdhatiwari with your $HOME
 
 # 3. copy the LaunchAgents into place and load them
-cp ~/trader/automation/com.trader.trade.plist   ~/Library/LaunchAgents/
-cp ~/trader/automation/com.trader.monitor.plist ~/Library/LaunchAgents/
+cp ~/trader/automation/com.trader.trade.plist    ~/Library/LaunchAgents/
+cp ~/trader/automation/com.trader.monitor.plist  ~/Library/LaunchAgents/
+cp ~/trader/automation/com.trader.validate.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.trader.trade.plist
 launchctl load ~/Library/LaunchAgents/com.trader.monitor.plist
+launchctl load ~/Library/LaunchAgents/com.trader.validate.plist
 
 # verify
 launchctl list | grep com.trader
@@ -44,6 +50,7 @@ launchctl list | grep com.trader
 ### Schedule (Europe/London local time)
 - Trade: weekdays **15:00** (~10:00 ET, mid US session).
 - Monitor: weekdays **21:15** (~16:15 ET, just after the close).
+- Re-validation: **1st of each month, 09:00**.
 
 Adjust the `Hour`/`Minute` in each plist if you prefer. (Daily-bar trend signals
 barely change intraday, so exact timing is not critical — the bot also checks the

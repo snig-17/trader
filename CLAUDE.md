@@ -133,18 +133,26 @@ disciplined re-validation + monitoring** — NOT picking a new "optimal strategy
 each day (that is overfitting/regime-chasing and is what blows accounts up). No LLM
 in the trade loop. Two layers, split by where they CAN run:
 
-- **Cloud (Claude scheduled routines — manage at https://claude.ai/code/routines):**
-  run in Anthropic's cloud from the GitHub repo; no access to local files/keys.
-  - `trader — monthly re-validation` (1st, 08:00 UTC): runs `validate_for_live.py`
-    on public data, emails PASS / ⚠️ EDGE DEGRADED to santosh.m.tiwari@gmail.com.
-  - `trader — monthly research digest` (1st, 09:00 UTC): web-researches trend
-    developments, emails a cited digest (human-review input only).
-- **Local (`automation/` via launchd — needs `.env` keys + local venv/journal):**
-  - `bot.py once` daily on weekdays ~15:00 London (~10:00 ET).
+- **Cloud (Claude scheduled routine — manage at https://claude.ai/code/routines):**
+  runs in Anthropic's cloud from the GitHub repo. Reports via a **GitHub issue**
+  (Gmail was dropped — connector only drafts + token expiry; cloud also blocks
+  Yahoo Finance egress and PushNotification was unreliable).
+  - `trader — monthly trend-following research digest` (1st, 09:00 UTC, Opus):
+    web-researches trend developments, files a cited issue (human-review input
+    only). Web access works in the sandbox.
+  - NOTE: cloud `trader — monthly re-validation` (trig_015i…) CANNOT fetch market
+    data (egress blocks yfinance, 403) — re-validation moved LOCAL. Disable or
+    leave it filing RUN-ERROR issues; egress allowlist on the Default env is not
+    user-editable.
+- **Local (`automation/` via launchd — needs `.env` keys / live market data):**
+  - `bot.py once` daily weekdays ~15:00 London (~10:00 ET).
   - `monitor.py` after close ~21:15 London: equity/positions/P&L/drawdown +
-    HALT/KILL state → `logs/` + macOS notification.
+    HALT/KILL → `logs/` + macOS notification.
+  - `validate_for_live.py` monthly, 1st 09:00 London → `logs/` + notification
+    (PASS / EDGE DEGRADED). yfinance works locally.
   - Install steps + VPS reliability caveat: `automation/README.md`. NOT auto-loaded;
-    user installs the LaunchAgents.
+    user installs the LaunchAgents. macOS notifications use ASCII text only (AppleScript
+    can't parse JSON \uXXXX escapes, so no emoji/em-dash in notification strings).
 
 ## Standing context
 Plan is to paper-trade for months before drawing conclusions. Early P&L is noise.

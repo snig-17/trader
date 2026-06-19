@@ -30,7 +30,8 @@ def _notify(title: str, message: str) -> None:
     try:
         subprocess.run(
             ["osascript", "-e",
-             f'display notification {json.dumps(message)} with title {json.dumps(title)}'],
+             f'display notification {json.dumps(message, ensure_ascii=False)} '
+             f'with title {json.dumps(title, ensure_ascii=False)}'],
             check=False, capture_output=True, timeout=5,
         )
     except Exception:
@@ -100,7 +101,7 @@ def main() -> int:
     except Exception:
         pass
 
-    headline = "⚠️ Trader: attention needed" if problem else "Trader: OK"
+    headline = "Trader: attention needed" if problem else "Trader: OK"
     summary = (f"${equity:,.0f}" if equity is not None else "no equity") + \
               (f", {len(positions)} positions" if positions else ", flat")
     if problem:
