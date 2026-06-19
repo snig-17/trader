@@ -56,6 +56,10 @@ python validate_for_live.py  # walk-forward validation; writes validation_report
     documented post-2010 trend decay). It still adds cluster diversification (lower
     concentration risk) but is ~Sharpe-neutral here. Do NOT tune the grid to
     manufacture a better number.
+  - DECISION (2026-06-19): KEEP the 9-ETF universe. The OOS Sharpe is net of costs
+    and ~unchanged, so the diversification (5 clusters, a new FX driver) comes with
+    no risk-adjusted penalty and matches the user's lower-risk / many-small-bets
+    goal. Reverting to 5 ETFs is a one-commit change if simplicity is preferred.
 - `bot.py dry` / `bot.py once` — connect to Alpaca paper fine (equity $100k).
 
 ## Strategy summary
@@ -113,12 +117,15 @@ python validate_for_live.py  # walk-forward validation; writes validation_report
   (one of three live gates), `state/HALTED` (written when a breaker trips).
 
 ## Open items / decisions in flight
-- **Strategy direction discussion (2026-06-18):** user is interested in "many
-  small bets for small accumulating returns." Assessment given: the sound version
-  is **more breadth (uncorrelated markets) + smaller per-trade risk**, NOT higher
-  trade frequency (turnover costs in `costs.py` kill thin-edge high-frequency
-  strategies). No changes made yet — awaiting a decision. Any change must
-  re-pass `validate_for_live.py`.
+- **Strategy direction (RESOLVED 2026-06-19):** user wanted "many small bets for
+  small accumulating returns." Sound version = more breadth (uncorrelated markets),
+  NOT higher trade frequency (turnover costs kill thin-edge fast strategies).
+  Implemented breadth (5->9 ETFs), revalidated (PASS), and decided to KEEP it (see
+  Current status). Research digest + re-validation now automated monthly.
+- **Possible next levers (not yet done):** smaller per-trade risk (lower
+  max_risk_per_trade / position caps) for an even calmer ride; or installing the
+  local launchd agents (user action). Any strategy change must re-pass
+  `validate_for_live.py` — never tune to manufacture a pass.
 
 ## Automation (set up 2026-06-19)
 The optimal workflow for a daily-bar trend bot is **reliable execution + slow,
