@@ -5,14 +5,17 @@ and the rules that must not be broken. Read it first every session. Keep it
 updated when something material changes.
 
 ## What this is
-A **paper-trading** bot in Python. Cross-asset **daily trend-following** over 5
-ETFs:
+A **paper-trading** bot in Python. Cross-asset **daily trend-following** over 9
+ETFs spanning 5 correlation clusters:
 
-- **SPY** — US equity
-- **EFA** — International equity
-- **IEF** — US Treasuries
-- **GLD** — Gold
-- **DBC** — Commodities
+- **SPY**, **EFA** — equity (US, international)
+- **IEF**, **TLT** — rates (intermediate, long Treasuries)
+- **GLD** — metals
+- **DBC**, **DBA** — commodity (broad/energy-heavy, agriculture)
+- **UUP**, **FXY** — currency (US dollar, Japanese yen)
+
+The currency + commodity/rates depth was added 2026-06-19 for breadth (the trend
+premium is largely a diversification effect; see `docs/research-trend-following.md`).
 
 Uses the **alpaca-py** SDK (NOT the deprecated `alpaca-trade-api`). Deterministic
 rules only — **no LLM in the trade loop**. Paper account by default. Paper money,
@@ -41,11 +44,18 @@ python validate_for_live.py  # walk-forward validation; writes validation_report
 - Outside US market hours, `bot.py once` correctly logs `market_open: False` and
   places 0 orders. That is expected, not a bug.
 
-## Current status (last verified 2026-06-18)
-- `test_safety.py` — all 11 checks PASS.
-- `validate_for_live.py` — PASSES. trend strategy: in-sample Sharpe 0.86,
-  out-of-sample 0.51, deflated Sharpe 0.997 over 19 trials (winner params
+## Current status (last verified 2026-06-19)
+- `test_safety.py` — all 11 checks PASS (9-name universe; the gross-cap test is now
+  rounding-aware since summing 9 display-rounded targets drifts ~3e-4).
+- `validate_for_live.py` — PASSES on the broadened 9-ETF universe: in-sample Sharpe
+  0.73, out-of-sample 0.50, deflated Sharpe 0.995 over 19 trials (winner params
   fast=20, slow=250). Report in `validation_reports/trend.json`.
+  - HONEST NOTE: broadening 5->9 ETFs did NOT improve OOS Sharpe (0.51->0.50) and
+    in-sample fell (0.86->0.73). The theoretical breadth benefit didn't materialize
+    in this LONG-ONLY ETF backtest over the post-2007 common window (dominated by the
+    documented post-2010 trend decay). It still adds cluster diversification (lower
+    concentration risk) but is ~Sharpe-neutral here. Do NOT tune the grid to
+    manufacture a better number.
 - `bot.py dry` / `bot.py once` — connect to Alpaca paper fine (equity $100k).
 
 ## Strategy summary

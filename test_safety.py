@@ -134,7 +134,10 @@ def test_end_to_end_then_crash():
     invested = any(abs(p.qty) > 0 for p in mb.get_positions().values())
     ok(r1.get("orders_placed", 0) > 0 and invested,
        f"normal run placed {r1.get('orders_placed')} orders, book is invested")
-    ok(sum(abs(v) for v in r1["targets"].values()) <= config.RISK.max_gross_leverage + 1e-9,
+    # targets are reported rounded to 4 dp, so summing N of them can drift up to
+    # N*5e-5 above the true (correctly-capped) gross. Tolerate display rounding only.
+    rounding_tol = len(r1["targets"]) * 5e-5
+    ok(sum(abs(v) for v in r1["targets"].values()) <= config.RISK.max_gross_leverage + rounding_tol,
        "targets respected the gross-leverage cap")
 
     # Crash all prices 15%; force day-start high so the daily-loss breaker fires.

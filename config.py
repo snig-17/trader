@@ -77,11 +77,21 @@ UNIVERSE: list[Instrument] = [
     Instrument("US equity",    "SPY",     "SPY", "equity", "equity"),
     Instrument("Intl equity",  "EFA",     "EFA", "equity", "equity"),
     Instrument("Treasuries",   "IEF",     "IEF", "equity", "rates"),
+    Instrument("Long Treas",   "TLT",     "TLT", "equity", "rates"),       # 20yr+ duration; distinct curve point from IEF
     Instrument("Gold",         "GLD",     "GLD", "equity", "metals"),
     Instrument("Commodities",  "DBC",     "DBC", "equity", "commodity"),
+    Instrument("Agriculture",  "DBA",     "DBA", "equity", "commodity"),   # ag basket; distinct driver from energy-heavy DBC
+    Instrument("US Dollar",    "UUP",     "UUP", "equity", "currency"),    # FX = a new, low-correlation asset class
+    Instrument("Jpn Yen",      "FXY",     "FXY", "equity", "currency"),    # classic safe-haven trend, distinct from UUP
     # Crypto trades 24/7; uncomment to include (needs crypto enabled on the account):
     # Instrument("Bitcoin",    "BTC-USD", "BTC/USD", "crypto", "crypto"),
 ]
+# Breadth rationale: the trend premium is overwhelmingly a diversification effect
+# (single-asset trend strategies correlate <0.1; see docs/research-trend-following.md).
+# Adding an uncorrelated asset class (FX) + distinct commodity/rates sleeves lifts the
+# effective independent-bet count from ~3-4 to ~5 clusters. The per_group_gross_cap in
+# risk.py keeps correlated names (SPY/EFA, IEF/TLT, DBC/DBA, UUP/FXY) from secretly
+# becoming one concentrated bet.
 
 # Strategy: 'trend' is the default because it is the only family with deep
 # out-of-sample academic support. 'mean_reversion' and 'breakout' are available

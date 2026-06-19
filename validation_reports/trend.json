@@ -4,17 +4,21 @@
     "US equity",
     "Intl equity",
     "Treasuries",
+    "Long Treas",
     "Gold",
-    "Commodities"
+    "Commodities",
+    "Agriculture",
+    "US Dollar",
+    "Jpn Yen"
   ],
   "n_trials": 19,
   "winner_params": {
     "fast": 20,
     "slow": 250
   },
-  "is_sharpe": 0.863,
-  "oos_sharpe": 0.506,
-  "deflated_sharpe": 0.9972,
+  "is_sharpe": 0.729,
+  "oos_sharpe": 0.495,
+  "deflated_sharpe": 0.9947,
   "passing": true,
-  "generated_at": "2026-06-18T20:43:08"
+  "generated_at": "2026-06-19T10:49:01"
 }
