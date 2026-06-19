@@ -8,8 +8,10 @@ name: daily-trade
 
 on:
   schedule:
-    # 15:00 UTC = 11:00 ET (EDT) / 10:00 ET (EST) — inside US market hours year-round.
-    - cron: "0 15 * * 1-5"
+    # Every day at 15:00 UTC. Weekdays this is inside US market hours (11:00 ET EDT /
+    # 10:00 ET EST) so equities rebalance; on weekends/holidays equities are closed and
+    # the run logs SKIP for them while still managing BTC (crypto trades 24/7).
+    - cron: "0 15 * * *"
   workflow_dispatch: {}   # lets you run it manually from the Actions tab
 
 permissions:
