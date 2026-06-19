@@ -1,0 +1,53 @@
+name: daily-trade
+
+# Runs ONE paper rebalance per weekday. A daily-bar trend bot only needs to fire
+# once a day, so an ephemeral scheduled runner is the right model (no 24/7 server).
+# Equities trade only in US market hours; the bot logs SKIP otherwise and BTC (24/7)
+# still rebalances. State + journal are committed back so circuit-breaker history
+# (peak equity, day start) survives across ephemeral runs.
+
+on:
+  schedule:
+    # 15:00 UTC = 11:00 ET (EDT) / 10:00 ET (EST) — inside US market hours year-round.
+    - cron: "0 15 * * 1-5"
+  workflow_dispatch: {}   # lets you run it manually from the Actions tab
+
+permissions:
+  contents: write          # to commit state/journal back to the repo
+
+concurrency:
+  group: trade
+  cancel-in-progress: false
+
+jobs:
+  trade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install alpaca-py yfinance pandas numpy scipy matplotlib
+
+      - name: Run one rebalance (PAPER)
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          BOT_MODE: PAPER          # hard paper; live gate still requires the other checks
+        run: python bot.py once
+
+      - name: Persist state + journal
+        if: always()               # keep the audit trail even if the run errored
+        run: |
+          git config user.name  "trader-bot"
+          git config user.email "trader-bot@users.noreply.github.com"
+          git add -f state/ journal/ || true
+          if ! git diff --cached --quiet; then
+            git commit -m "bot run $(date -u +%FT%TZ) [skip ci]"
+            git push
+          else
+            echo "no state/journal changes to commit"
+          fi
